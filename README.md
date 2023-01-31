@@ -89,7 +89,7 @@ print(valid)
 ```
 
 ## TODO
-- [ ] Built API for cybercoin
+- [x] Built API for cybercoin
 - [ ] Allow registration of new nodes
 - [ ] Write consensus algorithm
 - [ ] Build front-end application

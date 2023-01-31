@@ -1,3 +1,19 @@
+"""
+Copyright (C) 2023  Miles Rack
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
 from cybercoin import Blockchain as Cybercoin
 
 cyb = Cybercoin()
@@ -36,7 +52,7 @@ difficulty = cyb.get_difficulty()
 print(difficulty)
 # Returns the mining difficulty
 
-cyb.set_difficulty(5)
+cyb.set_difficulty(4)
 # Takes an integer between 0 and 63 as the argument and sets the mining difficulty
 # Returns True if successful or False if unsuccessful
 
@@ -70,7 +86,7 @@ print(new_transaction)
 cyb.mine()
 # Mines a new block if there are any unconfirmed transaction
 
-valid = cyb.validate()
+valid = cyb.validate(cyb.blocks)
 print(valid)
 # Validates the hashes of each block to ensure its integrity
 # Returns True if all blocks are valid and False if a block was tampered with

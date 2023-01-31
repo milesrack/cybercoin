@@ -87,7 +87,7 @@ class Blockchain:
 		wallet = self.wallet(address)
 		if wallet:
 			#return {"success":True, "message":"", "data":wallet.__dict__}
-			return wallet.__dict__
+			return {key:str(value) for key, value in wallet.__dict__.items()}
 		#return {"success":False, "message":"Wallet does not exists", "data":""}
 		return False
 
@@ -179,7 +179,9 @@ class Blockchain:
 		return transaction
 
 	def mine(self):
-		if self.unconfirmed_transactions:
+		confirmed = []
+		#if self.unconfirmed_transactions:
+		while self.unconfirmed_transactions:
 			transaction = self.unconfirmed_transactions.pop(0)
 			last_block = self.last_block()
 			block = Block(last_block.index + 1, last_block.hash())
@@ -200,14 +202,18 @@ class Blockchain:
 					#print(f"[+] Hash: {block.hash()}")
 					#print(f"[+] Data: {block.data}")
 			self.blocks.append(block)
+			confirmed.append(block.__dict__)
+		return confirmed
 
-	def validate(self):
+	def validate(self, blocks=None):
+		if blocks is None:
+			blocks = self.blocks
 		#print("[+] Validating blocks...")
 		i = 0
 		previous_hash = "0"*64
 		#validation = {}
-		while i < len(self.blocks):
-			block = self.blocks[i]
+		while i < len(blocks):
+			block = blocks[i]
 			#print(f"[+] {previous_hash} => {block.hash()}")
 			#validation[i] = f"{previous_hash} => {block.hash()}"
 			if block.previous_hash != previous_hash:

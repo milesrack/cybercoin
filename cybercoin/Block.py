@@ -18,7 +18,7 @@ import json
 from .Cryptography import sha256_hash
 
 class Block:
-	def __init__(self, index, previous_hash):
+	def __init__(self, index=0, previous_hash="0"*64):
 		self.index = index
 		self.previous_hash = previous_hash
 		self.nonce = 0
