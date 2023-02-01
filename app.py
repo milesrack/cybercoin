@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from flask import Flask, request
+import requests
 from cybercoin import Blockchain as Cybercoin
 
 app = Flask(__name__)
@@ -79,6 +80,10 @@ def fee():
 def transactions():
 	return {"transactions":cyb.get_transactions()}
 
+@app.route("/transactions/pending")
+def pending_transactions():
+	return {"transactions":cyb.get_pending()}
+
 @app.route("/transactions/new", methods=["POST"])
 def new_transaction():
 	transaction = {}
@@ -109,3 +114,28 @@ def mine():
 @app.route("/validate")
 def validate():
 	return {"valid":cyb.validate()}
+
+@app.route("/nodes")
+def nodes():
+	return {"nodes":cyb.get_nodes()}
+
+@app.route("/nodes/add")
+def add_node():
+	node = request.host_url
+	try:
+		r = requests.get(f"{node}validate")
+		assert r.json()["valid"] == "true"
+	except:
+		pass
+	else:
+		cyb.add_node(node)
+	return {"nodes":cyb.get_nodes()}
+
+@app.route("/nodes/register")
+def register_node():
+	#node = request.get_json()["node"]
+
+	#node = request.host_url
+	requests.post(f"{node}nodes/add")
+	cyb.add_node(node)
+	return {"nodes":cyb.get_nodes(), "blocks":cyb.get_blocks(), "wallets":cyb.get_wallets(), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee()}

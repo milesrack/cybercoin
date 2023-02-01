@@ -102,6 +102,7 @@ print(valid)
 ## TODO
 - [x] Built API for cybercoin
 - [ ] Allow registration of new nodes
+- [ ] Register current node with new remote nodes
 - [ ] Write consensus algorithm
 - [ ] Build front-end application
 

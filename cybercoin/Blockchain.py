@@ -27,6 +27,7 @@ class Blockchain:
 		self.unconfirmed_transactions = []
 		self.blocks = []
 		self.wallets = {}
+		self.nodes = {}
 		self.difficulty = 4
 		self.fee = Decimal("0.00")
 		self.vault_ = self.new_wallet()
@@ -141,6 +142,9 @@ class Blockchain:
 		#return {"success": True, "message":"", "data":transactions}
 		return transactions
 
+	def get_pending(self):
+		return self.unconfirmed_transactions
+
 	def get_transaction(self, txid):
 		for block in self.blocks:
 			if block.data["txid"] == txid:
@@ -208,18 +212,18 @@ class Blockchain:
 	def validate(self, blocks=None):
 		if blocks is None:
 			blocks = self.blocks
-		#print("[+] Validating blocks...")
 		i = 0
 		previous_hash = "0"*64
-		#validation = {}
 		while i < len(blocks):
 			block = blocks[i]
-			#print(f"[+] {previous_hash} => {block.hash()}")
-			#validation[i] = f"{previous_hash} => {block.hash()}"
-			if block.previous_hash != previous_hash:
-				#return {"success":False, "message":f"Block #{block.index}: {block.previous_hash} != {previous_hash}", "data":validation}
+			if (block.previous_hash != previous_hash) or (not block.hash().startswith("0"*self.difficulty)):
 				return False
 			previous_hash = block.hash()
 			i += 1
-		#return {"success":True, "message":"All blocks are valid", "data":validation}
 		return True
+
+	def get_nodes(self):
+		return self.nodes
+
+	def add_node(self, url):
+		self.nodes.add(url)
