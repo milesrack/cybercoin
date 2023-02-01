@@ -1,4 +1,4 @@
-# cybercoin
+# Cybercoin
 A blockchain implementation for the "Cybercoin" (CYB) cryptocurrency at CBCYBER.
 
 ## Installation
@@ -9,7 +9,7 @@ python3 setup.py install
 ```
 
 ## Usage
-### cybercoin package
+### Cybercoin Package
 ```python
 from cybercoin import Blockchain as Cybercoin
 
@@ -91,7 +91,7 @@ print(valid)
 # Takes an optional argument of a list of Block() objects to validate
 # Returns True if all blocks are valid and False if a block was tampered with
 ```
-### cybercoin API
+### Cybercoin API
 #### Wallets
 #### Blocks
 #### Difficulty
