@@ -1,4 +1,4 @@
-# Cybercoin
+# cybercoin
 A blockchain implementation for the "Cybercoin" (CYB) cryptocurrency at CBCYBER.
 
 ## Installation
@@ -8,7 +8,8 @@ cd cybercoin
 python3 setup.py install
 ```
 
-## Examples
+## Usage
+### cybercoin package
 ```python
 from cybercoin import Blockchain as Cybercoin
 
@@ -79,14 +80,24 @@ print(new_transaction)
 # ex. This example would send 100.00 CYB from vault to alice
 # Returns a dictionary of the transaction data if successful or False if unsuccessful
 
-cyb.mine()
-# Mines a new block if there are any unconfirmed transaction
+confirmed_transactions = cyb.mine()
+print(confirmed_transactions)
+# Mines a new block for each unconfirmed transaction
+# Returns a dictionary list of all newly mined blocks
 
 valid = cyb.validate()
 print(valid)
 # Validates the hashes of each block to ensure its integrity
+# Takes an optional argument of a list of Block() objects to validate
 # Returns True if all blocks are valid and False if a block was tampered with
 ```
+### cybercoin API
+#### Wallets
+#### Blocks
+#### Difficulty
+#### Fee
+#### Transactions
+#### Mine
 
 ## TODO
 - [x] Built API for cybercoin
