@@ -36,6 +36,10 @@ def home():
 def wallets():
 	return {"wallets":cyb.get_wallets()}
 
+@app.route("/wallets/new")
+def new_wallet():
+	return {"wallet":cyb.get_wallet(cyb.new_wallet().address)}
+
 @app.route("/wallets/<wallet>")
 def wallet(wallet):
 	return {"wallet":cyb.get_wallet(wallet)}
@@ -47,6 +51,11 @@ def length():
 @app.route("/blocks")
 def blocks():
 	return {"blocks":cyb.get_blocks()}
+
+@app.route("/blocks/add", methods=["POST"])
+def add_block():
+	# TODO
+	return {}
 
 @app.route("/blocks/<int:block>")
 def block(block):
@@ -117,25 +126,37 @@ def validate():
 
 @app.route("/nodes")
 def nodes():
-	return {"nodes":cyb.get_nodes()}
+	return {"nodes":list(cyb.get_nodes())}
 
-@app.route("/nodes/add")
-def add_node():
-	node = request.host_url
+@app.route("/nodes/add", methods=["POST"])
+def add_nodes():
 	try:
-		r = requests.get(f"{node}validate")
-		assert r.json()["valid"] == "true"
+		new_node = request.get_json()["node"]
+		#r = requests.get(f"{node}validate")
+		#assert r.json()["valid"] == "true"
 	except:
 		pass
 	else:
-		cyb.add_node(node)
-	return {"nodes":cyb.get_nodes()}
+		cyb.add_nodes([new_node])
+	return {"blocks":cyb.get_blocks(), "wallets":cyb.get_wallets(), "nodes":list(cyb.get_nodes()), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee()}
 
-@app.route("/nodes/register")
+@app.route("/nodes/register", methods=["POST"])
 def register_node():
-	#node = request.get_json()["node"]
-
-	#node = request.host_url
-	requests.post(f"{node}nodes/add")
-	cyb.add_node(node)
-	return {"nodes":cyb.get_nodes(), "blocks":cyb.get_blocks(), "wallets":cyb.get_wallets(), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee()}
+	try:
+		remote_node = request.get_json()["node"]
+		new_node = request.host_url
+		r = requests.post(f"{remote_node}nodes/add", json={"node":new_node})
+		json = r.json()
+	except:
+		pass
+	else:
+		if cyb.validate(cyb.blocks_from_json(json["blocks"])) and len(json["blocks"]) > cyb.length():
+			cyb.import_blocks(json["blocks"])
+			cyb.import_wallets(json["wallets"])
+			cyb.add_nodes(json["nodes"])
+			cyb.set_difficulty(json["difficulty"])
+			cyb.set_fee(json["fee"])
+			#print("returned remote node")
+			return json
+	#print("returned local data")
+	return {"blocks":cyb.get_blocks(), "wallets":cyb.get_wallets(), "nodes":list(cyb.get_nodes()), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee()}

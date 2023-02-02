@@ -25,4 +25,4 @@ class Block:
 		self.data = {}
 
 	def hash(self):
-		return sha256_hash(json.dumps(self.__dict__))
+		return sha256_hash(json.dumps(self.__dict__, sort_keys=True))

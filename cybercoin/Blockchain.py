@@ -27,7 +27,7 @@ class Blockchain:
 		self.unconfirmed_transactions = []
 		self.blocks = []
 		self.wallets = {}
-		self.nodes = {}
+		self.nodes = set()
 		self.difficulty = 4
 		self.fee = Decimal("0.00")
 		self.vault_ = self.new_wallet()
@@ -216,7 +216,7 @@ class Blockchain:
 		previous_hash = "0"*64
 		while i < len(blocks):
 			block = blocks[i]
-			if (block.previous_hash != previous_hash) or (not block.hash().startswith("0"*self.difficulty)):
+			if (block.previous_hash != previous_hash):
 				return False
 			previous_hash = block.hash()
 			i += 1
@@ -225,5 +225,26 @@ class Blockchain:
 	def get_nodes(self):
 		return self.nodes
 
-	def add_node(self, url):
-		self.nodes.add(url)
+	def add_nodes(self, urls):
+		self.nodes.update(urls)
+
+	def blocks_from_json(self, dump):
+		blocks = []
+		for index,block in dump.items():
+			b = Block()
+			b.index = int(block["index"])
+			b.previous_hash = block["previous_hash"]
+			b.nonce = int(block["nonce"])
+			b.data = block["data"]
+			blocks.append(b)
+		return blocks
+
+	def import_blocks(self, blocks):
+		self.blocks = self.blocks_from_json(blocks)
+
+	def import_wallets(self, wallets):
+		for address, balance in wallets.items():
+			wallet = Wallet()
+			wallet.address = address
+			wallet.balance = Decimal(balance)
+			self.wallets[address] = wallet
