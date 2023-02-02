@@ -30,7 +30,7 @@ cyb.mine()
 
 @app.route("/")
 def home():
-	return {}
+	return {"blocks":cyb.get_blocks(), "wallets":cyb.get_wallets(), "nodes":list(cyb.get_nodes()), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee()}
 
 @app.route("/wallets")
 def wallets():
@@ -54,8 +54,10 @@ def blocks():
 
 @app.route("/blocks/add", methods=["POST"])
 def add_block():
-	# TODO
-	return {}
+	json = request.get_json()
+	print(json)
+	new_block = cyb.blocks_from_json(json["block"])[0]
+	return {"added":cyb.add_block(new_block)}
 
 @app.route("/blocks/<int:block>")
 def block(block):
@@ -150,9 +152,10 @@ def register_node():
 	except:
 		pass
 	else:
-		if cyb.validate(cyb.blocks_from_json(json["blocks"])) and len(json["blocks"]) > cyb.length():
-			cyb.import_blocks(json["blocks"])
-			cyb.import_wallets(json["wallets"])
+		blocks = cyb.blocks_from_json(json["blocks"])
+		if cyb.validate(blocks) and len(blocks) > cyb.length():
+			cyb.blocks = blocks
+			cyb.wallets = cyb.wallets_from_json(json["wallets"])
 			cyb.add_nodes(json["nodes"])
 			cyb.set_difficulty(json["difficulty"])
 			cyb.set_fee(json["fee"])

@@ -20,6 +20,7 @@ import datetime
 from .Cryptography import sha256_hash
 import json
 import random
+import requests
 from .Wallet import Wallet
 
 class Blockchain:
@@ -28,6 +29,9 @@ class Blockchain:
 		self.blocks = []
 		self.wallets = {}
 		self.nodes = set()
+		##############################
+		self.nodes.add("http://127.0.0.1:5000/")
+		##############################
 		self.difficulty = 4
 		self.fee = Decimal("0.00")
 		self.vault_ = self.new_wallet()
@@ -46,8 +50,6 @@ class Blockchain:
 		}
 		transaction["txid"] = sha256_hash(json.dumps(transaction))
 		genesis.data = transaction
-		#print(f"[+] Coinbase transaction: {transaction}")
-		#print("[+] Mining genesis block...")
 		mined = False
 		while not mined:
 			nonce = int("".join([str(random.randint(0,9)) for i in range(8)]))
@@ -57,10 +59,6 @@ class Blockchain:
 				recipient = self.wallet(transaction["recipient"])
 				recipient.balance += Decimal(transaction["amount"])
 				mined = True		
-				#print(f"[+] Mined block #{genesis.index}")
-				#print(f"[+] Nonce: {genesis.nonce}")
-				#print(f"[+] Hash: {genesis.hash()}")
-				#print(f"[+] Data: {genesis.data}")
 		self.blocks.append(genesis)
 	
 	def new_wallet(self):
@@ -197,16 +195,20 @@ class Blockchain:
 				block.nonce = nonce
 				new_hash = block.hash()
 				if new_hash.startswith("0"*self.difficulty):
-					recipient = self.wallet(transaction["recipient"])
-					recipient.balance += Decimal(transaction["amount"])
-					self.vault_.balance += Decimal(transaction["fee"])
 					mined = True		
 					#print(f"[+] Mined block #{block.index}")
 					#print(f"[+] Nonce: {block.nonce}")
 					#print(f"[+] Hash: {block.hash()}")
 					#print(f"[+] Data: {block.data}")
-			self.blocks.append(block)
-			confirmed.append(block.__dict__)
+			blocks_before = self.get_blocks()
+			self.consensus()
+			if blocks_before == self.get_blocks():
+				recipient = self.wallet(transaction["recipient"])
+				recipient.balance += Decimal(transaction["amount"])
+				self.vault_.balance += Decimal(transaction["fee"])
+				self.blocks.append(block)
+				self.announce_block(block)
+				confirmed.append(block.__dict__)
 		return confirmed
 
 	def validate(self, blocks=None):
@@ -242,12 +244,50 @@ class Blockchain:
 	def import_blocks(self, blocks):
 		self.blocks = self.blocks_from_json(blocks)
 
-	def import_wallets(self, wallets):
+	def wallets_from_json(self, wallets):
+		new_wallets = {}
 		for address, balance in wallets.items():
 			wallet = Wallet()
 			wallet.address = address
 			wallet.balance = Decimal(balance)
-			self.wallets[address] = wallet
+			new_wallets[address] = wallet
+		return new_wallets
 
 	def add_block(self, block):
-		pass
+		if block.previous_hash == self.last_block().hash():
+			self.blocks.append(block)
+			return True
+		return False
+
+	def consensus(self):
+		longest_chain = self.blocks
+		wallets = self.get_wallets()
+		nodes = self.get_nodes()
+		difficulty = self.get_difficulty()
+		fee = self.get_fee()
+		for node in list(self.nodes):
+			try:
+				r = requests.get(f"{node}")
+				json = r.json()
+				blocks = self.blocks_from_json(json["blocks"])
+			except Exception as e:
+				print(str(e))
+			else:
+				if len(blocks) > len(longest_chain) and self.validate(blocks):
+					longest_chain = blocks
+					wallets = json["wallets"]
+					nodes = json["nodes"]
+					difficulty = json["difficulty"]
+					fee = json["fee"]
+		self.blocks = longest_chain
+		self.wallets = self.wallets_from_json(wallets)
+		self.add_nodes(nodes)
+		self.set_difficulty(difficulty)
+		self.set_fee(fee)
+
+	def announce_block(self, block):
+		for node in self.nodes:
+			try:
+				r = requests.post(f"{node}blocks/add", json={"block":{block.index:block.__dict__}})
+			except:
+				pass
