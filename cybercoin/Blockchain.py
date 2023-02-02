@@ -248,3 +248,6 @@ class Blockchain:
 			wallet.address = address
 			wallet.balance = Decimal(balance)
 			self.wallets[address] = wallet
+
+	def add_block(self, block):
+		pass
