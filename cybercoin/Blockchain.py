@@ -29,9 +29,7 @@ class Blockchain:
 		self.blocks = []
 		self.wallets = {}
 		self.nodes = set()
-		##############################
-		self.nodes.add("http://127.0.0.1:5000/")
-		##############################
+		#self.nodes.add("http://127.0.0.1:5000/")
 		self.difficulty = 4
 		self.fee = Decimal("0.00")
 		self.vault_ = self.new_wallet()
@@ -39,7 +37,7 @@ class Blockchain:
 		self.create_genesis()
 
 	def create_genesis(self):
-		genesis = Block(0, "0"*64)
+		block = Block(0, "0"*64)
 		transaction = {
 			"txid":"",
 			"timestamp":str(datetime.datetime.now()),
@@ -49,24 +47,50 @@ class Blockchain:
 			"fee":str(Decimal("0.00"))
 		}
 		transaction["txid"] = sha256_hash(json.dumps(transaction))
-		genesis.data = transaction
+		block.data = transaction
+		#mined = False
+		#while not mined:
+		#	nonce = int("".join([str(random.randint(0,9)) for i in range(8)]))
+		#	block.nonce = nonce
+		#	new_hash = block.hash()
+		#	if new_hash.startswith("0"*self.difficulty):
+		#		recipient = self.wallet(transaction["recipient"])
+		#		recipient.balance += Decimal(transaction["amount"])
+		#		mined = True		
+		#self.blocks.append(block)
 		mined = False
 		while not mined:
 			nonce = int("".join([str(random.randint(0,9)) for i in range(8)]))
-			genesis.nonce = nonce
-			new_hash = genesis.hash()
+			block.nonce = nonce
+			new_hash = block.hash()
 			if new_hash.startswith("0"*self.difficulty):
+				mined = True
 				recipient = self.wallet(transaction["recipient"])
 				recipient.balance += Decimal(transaction["amount"])
-				mined = True		
-		self.blocks.append(genesis)
+				self.vault_.balance += Decimal(transaction["fee"])
+				self.blocks.append(block)
+		#blocks_before = self.get_blocks()
+		#self.nodes.add("http://127.0.0.1:5000/")
+		#self.consensus()
+		#if blocks_before == self.get_blocks():
+		#	recipient = self.wallet(transaction["recipient"])
+		#	recipient.balance += Decimal(transaction["amount"])
+		#	self.vault_.balance += Decimal(transaction["fee"])
+		#	self.blocks.append(block)
+		#	self.announce_block(block)
 	
+	def timestamp_genesis(self, blocks=None):
+		if blocks is None:
+			blocks = self.blocks
+		return datetime.datetime.fromisoformat(blocks[0].data["timestamp"])	
+
 	def new_wallet(self):
 		unique = False
 		while not unique:
 			wallet = Wallet()
 			unique = wallet.address not in self.wallets.keys()
 		self.wallets[wallet.address] = wallet
+		self.announce_wallet(wallet)
 		return wallet
 
 	def wallet(self, address):
@@ -79,15 +103,12 @@ class Blockchain:
 
 	def get_wallets(self):
 		wallets = {address:str(wallet.balance) for (address, wallet) in self.wallets.items()}
-		#return {"success":True, "message":"", "data":wallets}
 		return wallets
 
 	def get_wallet(self, address):
 		wallet = self.wallet(address)
 		if wallet:
-			#return {"success":True, "message":"", "data":wallet.__dict__}
 			return {key:str(value) for key, value in wallet.__dict__.items()}
-		#return {"success":False, "message":"Wallet does not exists", "data":""}
 		return False
 
 	def length(self):
@@ -95,14 +116,11 @@ class Blockchain:
 
 	def get_blocks(self):
 		blockchain = {block.index:block.__dict__ for block in self.blocks}
-		#return {"success":True, "message":"", "data":blockchain}
 		return blockchain
 
 	def get_block(self, index):
 		if 0 <= index < len(self.blocks):
-			#return {"success":True, "message":"", "data":self.blocks[index].__dict__}
 			return self.blocks[index].__dict__
-		#return {"success":False, "message":"Invalid block index", "data":""}
 		return False
 
 	def last_block(self):
@@ -137,7 +155,6 @@ class Blockchain:
 			data = block.data
 			if (data["sender"] == address or data["recipient"] == address) or not address:
 				transactions.append(data)
-		#return {"success": True, "message":"", "data":transactions}
 		return transactions
 
 	def get_pending(self):
@@ -146,24 +163,18 @@ class Blockchain:
 	def get_transaction(self, txid):
 		for block in self.blocks:
 			if block.data["txid"] == txid:
-				#return {"success":True, "message":"", "data":block.data}
 				return block.data
-		#return {"success":False, "message":"Invalid txid", "data":""}
 		return False
 
 	def new_transaction(self, sender, recipient, amount):
 		amount = Decimal(str(amount))
 		if amount <= Decimal('0'):
-			#return {"success":False, "message":"Amount must be greater than 0", "data":""}
 			return False
 		if not sender:
-			#return {"success":False, "message":"Invalid sender wallet", "data":""}
 			return False
 		if not recipient:
-			#return {"success":False, "message":"Invalid recipient wallet", "data":""}
 			return False
 		if sender.balance - (amount + amount * self.fee) < Decimal('0'):
-			#return {"success":False, "message":f"Insufficient balance (network fee: {self.fee})", "data":""}
 			return False
 		sender.balance -= amount + amount * self.fee
 		transaction = {
@@ -176,19 +187,15 @@ class Blockchain:
 		}
 		transaction["txid"] = sha256_hash(json.dumps(transaction))
 		self.unconfirmed_transactions.append(transaction)
-		#print(f"[+] New transaction: {transaction}")
-		#return {"success":True, "message":f"Sent {str(amount)} CYB from {sender.address} => {recipient.address}", "data":transaction}
 		return transaction
 
 	def mine(self):
 		confirmed = []
-		#if self.unconfirmed_transactions:
 		while self.unconfirmed_transactions:
 			transaction = self.unconfirmed_transactions.pop(0)
 			last_block = self.last_block()
 			block = Block(last_block.index + 1, last_block.hash())
 			block.data = transaction
-			#print("[+] Mining block...")
 			mined = False
 			while not mined:
 				nonce = int("".join([str(random.randint(0,9)) for i in range(8)]))
@@ -196,10 +203,6 @@ class Blockchain:
 				new_hash = block.hash()
 				if new_hash.startswith("0"*self.difficulty):
 					mined = True		
-					#print(f"[+] Mined block #{block.index}")
-					#print(f"[+] Nonce: {block.nonce}")
-					#print(f"[+] Hash: {block.hash()}")
-					#print(f"[+] Data: {block.data}")
 			blocks_before = self.get_blocks()
 			self.consensus()
 			if blocks_before == self.get_blocks():
@@ -243,6 +246,13 @@ class Blockchain:
 
 	def import_blocks(self, blocks):
 		self.blocks = self.blocks_from_json(blocks)
+		return True		
+
+	def wallet_from_json(self, wallet):
+		w = Wallet()
+		w.address = wallet["address"]
+		w.balance = Decimal(wallet["balance"])
+		return w
 
 	def wallets_from_json(self, wallets):
 		new_wallets = {}
@@ -253,10 +263,24 @@ class Blockchain:
 			new_wallets[address] = wallet
 		return new_wallets
 
+	def import_wallets(self, wallets):
+		self.wallets = self.wallets_from_json(wallets)
+		return True
+
+	def add_wallet(self, wallet):
+		self.wallets.update({wallet.address:wallet})
+		return True
+
 	def add_block(self, block):
-		if block.previous_hash == self.last_block().hash():
+		if block.index == 0 and datetime.datetime.fromisoformat(block["data"]["timestamp"]) < datetime.datetime.fromisoformat(self.blocks[0].data["timestamp"]):
+			self.blocks = [block]
+			return True
+		elif block.previous_hash == self.last_block().hash():
 			self.blocks.append(block)
 			return True
+		print("Block not added")
+		print(f"block.previous_hash = {block.previous_hash}")
+		print(f"self.last_block.hash() = {self.last_block().hash()}")
 		return False
 
 	def consensus(self):
@@ -273,7 +297,7 @@ class Blockchain:
 			except Exception as e:
 				print(str(e))
 			else:
-				if len(blocks) > len(longest_chain) and self.validate(blocks):
+				if len(blocks) >= len(longest_chain) and self.timestamp_genesis(blocks) <= self.timestamp_genesis() and self.validate(blocks):
 					longest_chain = blocks
 					wallets = json["wallets"]
 					nodes = json["nodes"]
@@ -289,5 +313,19 @@ class Blockchain:
 		for node in self.nodes:
 			try:
 				r = requests.post(f"{node}blocks/add", json={"block":{block.index:block.__dict__}})
+			except:
+				pass
+	
+	def announce_nodes(self, nodes):
+		for node in self.nodes:
+			try:
+				r = requests.post(f"{node}nodes/add", json={"nodes":nodes})
+			except:
+				pass
+
+	def announce_wallet(self, wallet):
+		for node in self.nodes:
+			try:
+				r = requests.post(f"{node}wallets/add", json={"wallet":self.get_wallet(wallet.address)})
 			except:
 				pass
