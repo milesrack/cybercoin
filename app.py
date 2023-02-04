@@ -22,37 +22,44 @@ app = Flask(__name__)
 
 cyb = Cybercoin()
 
-vault = cyb.vault()
+vault = cyb.vault
 alice = cyb.new_wallet()
 bob = cyb.new_wallet()
-#cyb.new_transaction(vault, alice, 2000)
-#cyb.mine()
+
+cyb.new_transaction(vault, alice, 300)
+cyb.mine()
 
 @app.route("/")
 def home():
-	return {"blocks":cyb.get_blocks(), "wallets":cyb.get_wallets(), "nodes":list(cyb.get_nodes()), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee()}
+	return {}
 
 @app.route("/wallets")
 def wallets():
-	return {"wallets":cyb.get_wallets()}
+	return {"wallets":{address:str(cyb.get_balance(address)) for address in cyb.get_wallets().keys()}}
 
 @app.route("/wallets/new")
 def new_wallet():
-	return {"wallet":cyb.get_wallet(cyb.new_wallet().address)}
+	wallet = cyb.new_wallet()
+	address = wallet.address
+	return {"wallet":{address:str(cyb.get_balance(address))}}
 
 @app.route("/wallets/add", methods=["POST"])
 def add_wallet():
-	json = request.get_json()
-	wallet = cyb.wallet_from_json(json["wallet"])
-	return {"added":cyb.add_wallet(wallet)}
+	try:
+		json = request.get_json()
+		wallet = json["wallet"]
+	except:
+		return {"added":False}
+	else:
+		return {"added":cyb.add_wallet(wallet)}
 
-@app.route("/wallets/<wallet>")
-def wallet(wallet):
-	return {"wallet":cyb.get_wallet(wallet)}
+@app.route("/wallets/<address>")
+def wallet(address):
+	return {"wallet":{address:str(cyb.get_balance(address))}}
 
 @app.route("/length")
 def length():
-	return {"length":cyb.length()}
+	return {"length":len(cyb.blocks)}
 
 @app.route("/blocks")
 def blocks():
@@ -60,68 +67,77 @@ def blocks():
 
 @app.route("/blocks/add", methods=["POST"])
 def add_block():
-	json = request.get_json()
-	new_block = cyb.blocks_from_json(json["block"])[0]
-	return {"added":cyb.add_block(new_block)}
+	try:
+		json = request.get_json()
+		new_block = cyb.blocks_from_json(json["block"])[0]
+	except:
+		return {"added":False}
+	else:
+		return {"added":cyb.add_block(new_block)}
 
-@app.route("/blocks/<int:block>")
-def block(block):
-	return {"block":cyb.get_block(block)}
+@app.route("/blocks/<int:index>")
+def block(index):
+	return {"block":cyb.get_block(index)}
 
-@app.route("/difficulty", methods=["GET","POST"])
+@app.route("/difficulty")
 def difficulty():
-	if request.method == "POST":
-		try:
-			req = request.get_json()
-			difficulty = req["difficulty"]
-		except:
-			pass
-		else:
-			cyb.set_difficulty(difficulty)
 	return {"difficulty":cyb.get_difficulty()}
 
-@app.route("/fee", methods=["GET", "POST"])
+@app.route("/fee")
 def fee():
-	if request.method == "POST":
-		try:
-			req = request.get_json()
-			fee = req["fee"]
-		except:
-			pass
-		else:
-			cyb.set_fee(fee)
 	return {"fee":cyb.get_fee()}
+
+@app.route("/reward")
+def reward():
+	return {"reward":cyb.get_reward()}
 
 @app.route("/transactions")
 def transactions():
 	return {"transactions":cyb.get_transactions()}
 
-@app.route("/transactions/pending")
-def pending_transactions():
-	return {"transactions":cyb.get_pending()}
+@app.route("/transactions/unconfirmed")
+def unconfirmed_transactions():
+	return {"transactions":cyb.get_unconfirmed_transactions()}
+
+@app.route("/transactions/unconfirmed/<txid>")
+def unconfirmed_transaction(txid):
+	return {"transaction":cyb.get_unconfirmed_transaction(txid)}
+
+@app.route("/transactions/unconfirmed/wallet/<address>/")
+def unconfirmed_transactions_wallet(address):
+	return {"transactions":cyb.get_unconfirmed_transactions(address)}
 
 @app.route("/transactions/new", methods=["POST"])
 def new_transaction():
-	transaction = {}
-	if request.method == "POST":
-		try:
-			req = request.get_json()
-			sender = cyb.wallet(req["sender"])
-			recipient = cyb.wallet(req["recipient"])
-			amount = req["amount"]
-		except:
-			pass
-		else:
-			transaction = cyb.new_transaction(sender, recipient, amount)
+	transaction = False
+	try:
+		json = request.get_json()
+		sender = cyb.get_wallet(json["sender"])
+		recipient = cyb.get_wallet(json["recipient"])
+		amount = json["amount"]
+	except:
+		pass
+	else:
+		transaction = cyb.new_transaction(sender, recipient, amount)
 	return {"transaction":transaction}
 
-@app.route("/transactions/wallet/<wallet>")
-def wallet_transactions(wallet):
-	return {"transaction":cyb.get_transactions(wallet)}
+@app.route("/transactions/add", methods=["POST"])
+def add_transaction():
+	try:
+		json = request.get_json()
+		transaction = json["transaction"]
+	except:
+		return {"added":False}
+	else:
+		return {"added":cyb.add_transaction(transaction)}
 
-@app.route("/transactions/<transaction>")
-def transaction(transaction):
-	return {"transaction":cyb.get_transaction(transaction)}
+@app.route("/transactions/wallet/<address>")
+def wallet_transactions(address):
+	return {"transactions":cyb.get_transactions(address)}
+
+@app.route("/transactions/<txid>")
+def transaction(txid):
+	return {"transaction":cyb.get_transaction(txid)}
 
 @app.route("/mine")
 def mine():
@@ -135,16 +151,16 @@ def validate():
 def nodes():
 	return {"nodes":list(cyb.get_nodes())}
 
-@app.route("/nodes/add", methods=["POST"])
+@app.route("/nodes/add", methods=["GET","POST"])
 def add_nodes():
-	try:
-		nodes = request.get_json()["nodes"]
-	except:
-		pass
-	else:
-		cyb.add_nodes(nodes)
-		#cyb.consensus()
-	return {"blocks":cyb.get_blocks(), "wallets":cyb.get_wallets(), "nodes":list(cyb.get_nodes()), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee()}
+	if request.method == "POST":
+		try:
+			nodes = request.get_json()["nodes"]
+		except:
+			pass
+		else:
+			cyb.add_nodes(nodes)
+	return {"blocks":cyb.get_blocks(), "unconfirmed":cyb.get_unconfirmed_transactions(), "wallets":cyb.get_wallets(), "nodes":list(cyb.get_nodes()), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee(), "reward":cyb.get_reward()}
 
 @app.route("/nodes/register", methods=["POST"])
 def register_nodes():
@@ -153,31 +169,19 @@ def register_nodes():
 		this_node = request.host_url
 		nodes = [remote_node, this_node]
 		cyb.add_nodes(nodes)
-		#cyb.consensus()
-		#cyb.announce_nodes(list(cyb.get_nodes()))
-		#cyb.consensus()
 		r = requests.post(f"{remote_node}nodes/add", json={"nodes":list(cyb.get_nodes())})
 		json = r.json()
 		cyb.import_blocks(json["blocks"])
+		cyb.unconfirmed_transactions = json["unconfirmed"]
+		vault = cyb.vault
 		cyb.import_wallets(json["wallets"])
 		cyb.add_nodes(json["nodes"])
 		cyb.set_difficulty(json["difficulty"])
 		cyb.set_fee(json["fee"])
+		cyb.set_reward(json["reward"])
 		cyb.announce_nodes(list(cyb.get_nodes()))
+		cyb.announce_wallet(vault)
 	except:
-		pass
+		return {"registered":False}
 	else:
-		pass
-		#cyb.consensus()
-		#blocks = cyb.blocks_from_json(json["blocks"])
-		#if len(blocks) >= cyb.length() and cyb.timestamp_genesis(blocks) < cyb.timestamp_genesis() and cyb.validate(blocks):
-		##if cyb.validate(blocks) and len(blocks) > cyb.length():
-		#	cyb.blocks = blocks
-		#	cyb.wallets = cyb.wallets_from_json(json["wallets"])
-		#	cyb.add_nodes(json["nodes"])
-		#	cyb.set_difficulty(json["difficulty"])
-		#	cyb.set_fee(json["fee"])
-		#	#print("returned remote node")
-		#	return json
-	#print("returned local data")
-	return {"blocks":cyb.get_blocks(), "wallets":cyb.get_wallets(), "nodes":list(cyb.get_nodes()), "difficulty":cyb.get_difficulty(), "fee":cyb.get_fee()}
+		return {"registered":True}

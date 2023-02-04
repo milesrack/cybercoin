@@ -22,8 +22,11 @@ from .Cryptography import sha256_hash
 class Wallet:
 	def __init__(self):
 		self.address = ""
-		self.balance = Decimal("0")
+		# TODO: private key stuff
 		self.generate_address()
+
+	def __str__(self):
+		return self.address
 	
 	def generate_address(self):
 		random_hash = sha256_hash("".join([str(random.randint(0,9)) for i in range(8)]) + str(datetime.datetime.now()))

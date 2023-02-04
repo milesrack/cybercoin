@@ -23,6 +23,8 @@ class Block:
 		self.previous_hash = previous_hash
 		self.nonce = 0
 		self.data = {}
+		self.miner = ""
+		self.reward = ""
 
 	def hash(self):
 		return sha256_hash(json.dumps(self.__dict__, sort_keys=True))
