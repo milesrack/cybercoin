@@ -14,9 +14,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from Crypto.PublicKey import RSA
+from Crypto.Hash import SHA256
+from Crypto import Random
 import random
 import datetime
-from .Cryptography import sha256_hash
 
 class Wallet:
 	def __init__(self):
