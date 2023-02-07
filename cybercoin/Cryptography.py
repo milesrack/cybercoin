@@ -14,7 +14,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import hashlib
+from Crypto.Hash import SHA256
 
 def sha256_hash(data):
-	return hashlib.sha256(bytes(data, "utf-8")).hexdigest()
+	digest = SHA256.new()
+	digest.update(bytes(str(data), "utf-8"))
+	return digest.hexdigest()

@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import random
+import secrets
 import datetime
 from .Cryptography import sha256_hash
 
@@ -28,7 +28,7 @@ class Wallet:
 		return self.address
 	
 	def generate_address(self):
-		random_hash = sha256_hash("".join([str(random.randint(0,9)) for i in range(8)]) + str(datetime.datetime.now()))
+		random_hash = sha256_hash("".join([str(secrets.randbelow(10)) for i in range(8)]) + str(datetime.datetime.now()))
 		upper = random_hash[:32]
 		lower = random_hash[32:]
 		self.address = "0x" + "".join([hex(int(upper[i],16) ^ int(lower[i],16))[2:] for i in range(32)])

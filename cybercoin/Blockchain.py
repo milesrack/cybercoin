@@ -19,7 +19,7 @@ from .Block import Block
 import datetime
 from .Cryptography import sha256_hash
 import json
-import random
+import secrets
 import requests
 from .Wallet import Wallet
 
@@ -50,7 +50,7 @@ class Blockchain:
 		block.data = transaction
 		mined = False
 		while not mined:
-			nonce = int("".join([str(random.randint(0,9)) for i in range(8)]))
+			nonce = int("".join([str(secrets.randbelow(10)) for i in range(8)]))
 			block.nonce = nonce
 			block.reward = str(self.reward / Decimal("2")**(Decimal(str(block.index)) // Decimal("100")))
 			new_hash = block.hash()
@@ -118,13 +118,20 @@ class Blockchain:
 	#def length(self):
 	#	return len(self.blocks)
 
+	def parse_block(self, block):
+		parsed = dict(block.__dict__)
+		parsed["hash"] = block.hash()
+		return parsed
+
 	def get_blocks(self):
-		blockchain = {block.index:block.__dict__ for block in self.blocks}
+		#blockchain = {block.index:block.__dict__ for block in self.blocks}
+		blockchain = {block.index:self.parse_block(block) for block in self.blocks}
 		return blockchain
 
 	def get_block(self, index):
 		if 0 <= index < len(self.blocks):
-			return self.blocks[index].__dict__
+			#return self.blocks[index].__dict__
+			return self.parse_block(self.blocks[index])
 		return False
 
 	def last_block(self):
@@ -238,7 +245,7 @@ class Blockchain:
 			block.data = transaction
 			mined = False
 			while not mined:
-				nonce = int("".join([str(random.randint(0,9)) for i in range(8)]))
+				nonce = int("".join([str(secrets.randbelow(10)) for i in range(8)]))
 				block.nonce = nonce
 				block.reward = str(self.reward / Decimal("2")**(Decimal(str(block.index)) // Decimal("100")))
 				new_hash = block.hash()

@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import random
+import secrets
 import math
 import base64
 
@@ -82,11 +82,11 @@ def decrypt(ct, d, n):
 primes = get_primes(min=0,max=1000)
 primes.remove(2)
 
-p = random.choice(primes)
+p = secrets.choice(primes)
 primes.remove(p)
 print(f"p = {p}")
 
-q = random.choice(primes)
+q = secrets.choice(primes)
 primes.remove(q)
 print(f"q = {q}")
 
@@ -96,11 +96,11 @@ print(f"n = {n}")
 phi = phi(p,q)
 print(f"phi = {phi}")
 
-e = random.choice(possible_e(n,phi))
+e = secrets.choice(possible_e(n,phi))
 #e = 65537
 print(f"e = {e}")
 
-d = random.choice(possible_d(e,phi))
+d = secrets.choice(possible_d(e,phi))
 print(f"d = {d}")
 
 public_key = (e, n)

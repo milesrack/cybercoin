@@ -26,8 +26,8 @@ vault = cyb.vault
 alice = cyb.new_wallet()
 bob = cyb.new_wallet()
 
-cyb.new_transaction(vault, alice, 300)
-cyb.mine()
+#cyb.new_transaction(vault, alice, 300)
+#cyb.mine()
 
 @app.route("/")
 def home():
@@ -74,6 +74,10 @@ def add_block():
 		return {"added":False}
 	else:
 		return {"added":cyb.add_block(new_block)}
+
+@app.route("/blocks/last")
+def last_block():
+	return {"block":cyb.get_block(cyb.last_block().index)}
 
 @app.route("/blocks/<int:index>")
 def block(index):
