@@ -75,7 +75,6 @@ class Blockchain:
 		return (wallet, private_key)
 
 	def add_wallet(self, data):
-		print(data)
 		if data["address"] not in self.wallets.keys():
 			wallet = Wallet(data["public_key"])
 			self.wallets[data["address"]] = wallet
@@ -92,7 +91,8 @@ class Blockchain:
 
 	def get_wallets(self):
 		#wallets = {address:str(self.get_balance(address)) for (address, wallet) in self.wallets.items()}
-		wallets = {address:self.parse_wallet(wallet) for (address, wallet) in self.wallets.items()}
+		#wallets = {address:self.parse_wallet(wallet) for (address, wallet) in self.wallets.items()}
+		wallets = [self.parse_wallet(wallet) for (address, wallet) in self.wallets.items()]
 		return wallets
 
 	def get_wallet(self, address):
@@ -303,9 +303,10 @@ class Blockchain:
 
 	def wallets_from_json(self, wallets):
 		new_wallets = {}
-		for address, data in wallets.items():
+		#for address, data in wallets.items():
+		for data in wallets:
 			wallet = Wallet(data["public_key"])
-			new_wallets[address] = wallet
+			new_wallets[data["address"]] = wallet
 		return new_wallets
 
 	def import_wallets(self, wallets):
