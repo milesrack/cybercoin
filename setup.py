@@ -23,4 +23,8 @@ setup(
 	version="0.1.0",
 	url="https://github.com/milesrack/cybercoin",
 	packages=["cybercoin"],
+	install_requires=[
+		"requests >= 2.28.1",
+		"pycryptodome >= 3.17"
+	],
 )
