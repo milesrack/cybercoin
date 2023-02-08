@@ -20,8 +20,13 @@ python3 setup.py install
 - [x] Register current node with new remote nodes
 - [x] Write consensus algorithm
 - [x] Calculate wallet balance from blocks
-- [ ] Private keys to prevent forging transactions
+- [x] Private keys to prevent forging transactions
 - [x] Pay network fees
+- [ ] Import/export keys
+- [ ] Auto register and import vault on start
+- [ ] Return wallets as list in API
+- [ ] Transaction signing and verification
+- [ ] Regenerate duplicate vault address on node registration
 - [ ] Replace requests bloat with urllib3
 - [ ] Build front-end application
 

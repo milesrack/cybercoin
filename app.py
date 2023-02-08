@@ -23,8 +23,10 @@ app = Flask(__name__)
 cyb = Cybercoin()
 
 vault = cyb.vault
-alice = cyb.new_wallet()
-bob = cyb.new_wallet()
+print(vault.address)
+print(cyb.private_key)
+alice, alice_key = cyb.new_wallet()
+bob, bob_key = cyb.new_wallet()
 
 #cyb.new_transaction(vault, alice, 300)
 #cyb.mine()
@@ -35,13 +37,14 @@ def home():
 
 @app.route("/wallets")
 def wallets():
-	return {"wallets":{address:str(cyb.get_balance(address)) for address in cyb.get_wallets().keys()}}
+	return {"wallets":cyb.get_wallets()}
 
 @app.route("/wallets/new")
 def new_wallet():
-	wallet = cyb.new_wallet()
-	address = wallet.address
-	return {"wallet":{address:str(cyb.get_balance(address))}}
+	wallet, private_key = cyb.new_wallet()
+	wallet_ = cyb.parse_wallet(wallet)
+	wallet_["private_key"] = private_key
+	return {"wallet":wallet_}
 
 @app.route("/wallets/add", methods=["POST"])
 def add_wallet():
@@ -55,7 +58,7 @@ def add_wallet():
 
 @app.route("/wallets/<address>")
 def wallet(address):
-	return {"wallet":{address:str(cyb.get_balance(address))}}
+	return {"wallet":cyb.parse_wallet(cyb.get_wallet(address))}
 
 @app.route("/length")
 def length():

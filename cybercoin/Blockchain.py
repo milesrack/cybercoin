@@ -32,7 +32,7 @@ class Blockchain:
 		self.difficulty = 4
 		self.fee = Decimal("0.01")
 		self.reward = Decimal("100.00")
-		self.vault = self.new_wallet()
+		self.vault, self.private_key = self.new_wallet()
 		self.create_genesis()
 
 	def create_genesis(self):
@@ -64,30 +64,35 @@ class Blockchain:
 			blocks = self.blocks
 		return datetime.datetime.fromisoformat(blocks[0].data["timestamp"])	
 
-	#def get_vault(self):
-	#	return self.vault
-
 	def new_wallet(self):
 		unique = False
 		while not unique:
 			wallet = Wallet()
+			private_key = wallet.generate_keys()
 			unique = wallet.address not in self.wallets
 		self.wallets[wallet.address] = wallet
 		self.announce_wallet(wallet)
-		return wallet
+		return (wallet, private_key)
 
-	def add_wallet(self, address):
-		if address not in self.wallets.keys():
-			wallet = Wallet()
-			wallet.address = address
-			self.wallets[address] = wallet
+	def add_wallet(self, data):
+		print(data)
+		if data["address"] not in self.wallets.keys():
+			wallet = Wallet(data["public_key"])
+			self.wallets[data["address"]] = wallet
 			return True
 		return False
 
+	def parse_wallet(self, wallet):
+		try:
+			wallet = dict(wallet.__dict__)
+			wallet["balance"] = self.get_balance(wallet["address"])
+		except:
+			return False
+		return wallet
+
 	def get_wallets(self):
-		wallets = {address:str(self.get_balance(address)) for (address, wallet) in self.wallets.items()}
-		#wallets = {address:wallet.__dict__ for (address, wallet) in self.wallets.items()}
-		#return self.wallets
+		#wallets = {address:str(self.get_balance(address)) for (address, wallet) in self.wallets.items()}
+		wallets = {address:self.parse_wallet(wallet) for (address, wallet) in self.wallets.items()}
 		return wallets
 
 	def get_wallet(self, address):
@@ -115,22 +120,20 @@ class Blockchain:
 					balance += Decimal(unconfirmed["amount"])
 		return balance
 
-	#def length(self):
-	#	return len(self.blocks)
-
 	def parse_block(self, block):
-		parsed = dict(block.__dict__)
-		parsed["hash"] = block.hash()
+		try:
+			parsed = dict(block.__dict__)
+			parsed["hash"] = block.hash()
+		except:
+			return False
 		return parsed
 
 	def get_blocks(self):
-		#blockchain = {block.index:block.__dict__ for block in self.blocks}
 		blockchain = {block.index:self.parse_block(block) for block in self.blocks}
 		return blockchain
 
 	def get_block(self, index):
 		if 0 <= index < len(self.blocks):
-			#return self.blocks[index].__dict__
 			return self.parse_block(self.blocks[index])
 		return False
 
@@ -300,9 +303,8 @@ class Blockchain:
 
 	def wallets_from_json(self, wallets):
 		new_wallets = {}
-		for address, balance in wallets.items():
-			wallet = Wallet()
-			wallet.address = address
+		for address, data in wallets.items():
+			wallet = Wallet(data["public_key"])
 			new_wallets[address] = wallet
 		return new_wallets
 
@@ -374,7 +376,7 @@ class Blockchain:
 	def announce_wallet(self, wallet):
 		for node in self.nodes:
 			try:
-				r = requests.post(f"{node}wallets/add", json={"wallet":wallet.address})
+				r = requests.post(f"{node}wallets/add", json={"wallet":self.parse_wallet(wallet)})
 			except:
 				pass
 
