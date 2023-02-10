@@ -22,13 +22,9 @@ app = Flask(__name__)
 
 cyb = Cybercoin()
 
-vault = cyb.vault
-#print(cyb.private_key)
-alice, alice_key = cyb.new_wallet()
-bob, bob_key = cyb.new_wallet()
-
-#cyb.new_transaction(vault, alice, 300)
-#cyb.mine()
+print(f"Address: {cyb.vault.address}")
+print(f"Public key: {cyb.vault.public_key}")
+print(f"Private key: {cyb.private_key}")
 
 @app.route("/")
 def home():

@@ -212,10 +212,10 @@ class Blockchain:
 			return False
 		if self.get_balance(sender.address, include_unconfirmed=True) - (amount + amount * self.fee) < Decimal('0'):
 			return False
-		###### TODO signature checks
 		message = ":".join([sender.address, recipient.address, str(amount), self.last_block().hash()])
 		signed = Wallet.verify(sender.public_key, message, signature)
-		print(signed)
+		if not signed:
+			return False
 		transaction = {
 			"txid":"",
 			"timestamp":str(datetime.datetime.utcnow()),

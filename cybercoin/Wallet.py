@@ -21,13 +21,13 @@ from .Cryptography import sha256_hash
 import base64
 
 class Wallet:
-	def __init__(self, public_key=None):
+	def __init__(self, key=None):
 		self.address = ""
 		self.public_key = ""
-		if public_key is None:
+		if key is None:
 			self.generate_keys()
 		else:
-			self.import_key(public_key)
+			self.import_key(key)
 
 	def __str__(self):
 		return self.address
@@ -35,9 +35,9 @@ class Wallet:
 	@staticmethod
 	def key_from_base64(key):
 		items = [int(x, 16) for x in base64.b64decode(bytes(key, "utf-8")).decode().split(":")]
-		if len(items) == 3:
+		if len(items) == 6:
 			k = RSA.generate(2048)
-			k._p, k._q, k._d = items
+			k._p, k._q, k._d, k._u, k._dp, k._dq = items
 			k._n = k.p * k.q
 			k._e = 65537
 		elif len(items) == 1:
@@ -51,7 +51,7 @@ class Wallet:
 	@staticmethod
 	def key_to_base64(key):
 		if key.has_private():
-			k = ":".join(hex(x)[2:] for x in [key.p, key.q, key.d])
+			k = ":".join(hex(x)[2:] for x in [key.p, key.q, key.d, key.u, key.dp, key.dq])
 		else:
 			k = ":".join(hex(x)[2:] for x in [key.n])
 		return base64.b64encode(bytes(k, "utf-8")).decode()

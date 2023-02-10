@@ -17,3 +17,4 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from .Blockchain import Blockchain
 from .Block import Block
 from .Cryptography import sha256_hash
+from .Wallet import Wallet
