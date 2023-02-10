@@ -90,6 +90,11 @@ class Blockchain:
 		return wallet
 
 	def get_wallets(self):
+<<<<<<< HEAD
+=======
+		#wallets = {address:str(self.get_balance(address)) for (address, wallet) in self.wallets.items()}
+		#wallets = {address:self.parse_wallet(wallet) for (address, wallet) in self.wallets.items()}
+>>>>>>> 9ac4a59e596d2d5316f75cd669257c0b1c819873
 		wallets = [self.parse_wallet(wallet) for (address, wallet) in self.wallets.items()]
 		return wallets
 
@@ -305,6 +310,10 @@ class Blockchain:
 
 	def wallets_from_json(self, wallets):
 		new_wallets = {}
+<<<<<<< HEAD
+=======
+		#for address, data in wallets.items():
+>>>>>>> 9ac4a59e596d2d5316f75cd669257c0b1c819873
 		for data in wallets:
 			wallet = Wallet(data["public_key"])
 			new_wallets[data["address"]] = wallet
