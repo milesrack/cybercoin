@@ -34,11 +34,27 @@ class Wallet:
 	
 	@staticmethod
 	def key_from_base64(key):
-		return RSA.import_key(base64.b64decode(bytes(key, "utf-8")))
+		items = [int(x, 16) for x in base64.b64decode(bytes(key, "utf-8")).decode().split(":")]
+		if len(items) == 3:
+			k = RSA.generate(2048)
+			k._p, k._q, k._d = items
+			k._n = k.p * k.q
+			k._e = 65537
+		elif len(items) == 1:
+			k = RSA.generate(2048).publickey()
+			k._n = items[0]
+			k._e = 65537
+		else:
+			k = None
+		return k
 	
 	@staticmethod
 	def key_to_base64(key):
-		return base64.b64encode(key.exportKey()).decode()
+		if key.has_private():
+			k = ":".join(hex(x)[2:] for x in [key.p, key.q, key.d])
+		else:
+			k = ":".join(hex(x)[2:] for x in [key.n])
+		return base64.b64encode(bytes(k, "utf-8")).decode()
 
 	def import_key(self, public_key):
 		public_key = Wallet.key_from_base64(public_key)
@@ -56,7 +72,7 @@ class Wallet:
 
 	@staticmethod
 	def sign(private_key, message):
-		private_key = key_from_base64(private_key)
+		private_key = Wallet.key_from_base64(private_key)
 		signer = PKCS1_v1_5.new(private_key)
 		digest = SHA256.new()
 		digest.update(bytes(message, "utf-8"))
@@ -64,7 +80,7 @@ class Wallet:
 
 	@staticmethod
 	def verify(public_key, message, signature):
-		public_key = key_from_base64(public_key)
+		public_key = Wallet.key_from_base64(public_key)
 		signer = PKCS1_v1_5.new(public_key)
 		digest = SHA256.new()
 		digest.update(bytes(message, "utf-8"))

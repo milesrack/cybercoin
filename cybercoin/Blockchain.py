@@ -75,7 +75,6 @@ class Blockchain:
 		return (wallet, private_key)
 
 	def add_wallet(self, data):
-		print(data)
 		if data["address"] not in self.wallets.keys():
 			wallet = Wallet(data["public_key"])
 			self.wallets[data["address"]] = wallet
@@ -85,14 +84,13 @@ class Blockchain:
 	def parse_wallet(self, wallet):
 		try:
 			wallet = dict(wallet.__dict__)
-			wallet["balance"] = self.get_balance(wallet["address"])
+			wallet["balance"] = str(self.get_balance(wallet["address"]))
 		except:
 			return False
 		return wallet
 
 	def get_wallets(self):
-		#wallets = {address:str(self.get_balance(address)) for (address, wallet) in self.wallets.items()}
-		wallets = {address:self.parse_wallet(wallet) for (address, wallet) in self.wallets.items()}
+		wallets = [self.parse_wallet(wallet) for (address, wallet) in self.wallets.items()]
 		return wallets
 
 	def get_wallet(self, address):
@@ -204,7 +202,7 @@ class Blockchain:
 				return transaction
 		return False
 
-	def new_transaction(self, sender, recipient, amount):
+	def new_transaction(self, sender, recipient, amount, signature):
 		amount = Decimal(str(amount))
 		if amount <= Decimal('0'):
 			return False
@@ -214,6 +212,10 @@ class Blockchain:
 			return False
 		if self.get_balance(sender.address, include_unconfirmed=True) - (amount + amount * self.fee) < Decimal('0'):
 			return False
+		###### TODO signature checks
+		message = ":".join([sender.address, recipient.address, str(amount), self.last_block().hash()])
+		signed = Wallet.verify(sender.public_key, message, signature)
+		print(signed)
 		transaction = {
 			"txid":"",
 			"timestamp":str(datetime.datetime.utcnow()),
@@ -303,9 +305,9 @@ class Blockchain:
 
 	def wallets_from_json(self, wallets):
 		new_wallets = {}
-		for address, data in wallets.items():
+		for data in wallets:
 			wallet = Wallet(data["public_key"])
-			new_wallets[address] = wallet
+			new_wallets[data["address"]] = wallet
 		return new_wallets
 
 	def import_wallets(self, wallets):

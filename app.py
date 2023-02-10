@@ -23,8 +23,7 @@ app = Flask(__name__)
 cyb = Cybercoin()
 
 vault = cyb.vault
-print(vault.address)
-print(cyb.private_key)
+#print(cyb.private_key)
 alice, alice_key = cyb.new_wallet()
 bob, bob_key = cyb.new_wallet()
 
@@ -180,15 +179,17 @@ def register_nodes():
 		json = r.json()
 		cyb.import_blocks(json["blocks"])
 		cyb.unconfirmed_transactions = json["unconfirmed"]
-		vault = cyb.vault
 		cyb.import_wallets(json["wallets"])
+		while any(wallet["address"] == cyb.vault.address for wallet in json["wallets"]):
+			cyb.vault, cyb.private_key = cyb.new_wallet()
 		cyb.add_nodes(json["nodes"])
 		cyb.set_difficulty(json["difficulty"])
 		cyb.set_fee(json["fee"])
 		cyb.set_reward(json["reward"])
 		cyb.announce_nodes(list(cyb.get_nodes()))
-		cyb.announce_wallet(vault)
-	except:
+		cyb.announce_wallet(cyb.vault)
+	except Exception as e:
+		print(e)
 		return {"registered":False}
 	else:
 		return {"registered":True}

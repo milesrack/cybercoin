@@ -22,11 +22,11 @@ python3 setup.py install
 - [x] Calculate wallet balance from blocks
 - [x] Private keys to prevent forging transactions
 - [x] Pay network fees
-- [ ] Import/export keys
+- [x] Import/export keys
 - [ ] Auto register and import vault on start
-- [ ] Return wallets as list in API
+- [x] Return wallets as list in API
 - [ ] Transaction signing and verification
-- [ ] Regenerate duplicate vault address on node registration
+- [x] Regenerate duplicate vault address on node registration
 - [ ] Replace requests bloat with urllib3
 - [ ] Build front-end application
 
