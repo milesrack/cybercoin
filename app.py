@@ -121,10 +121,11 @@ def new_transaction():
 		sender = cyb.get_wallet(json["sender"])
 		recipient = cyb.get_wallet(json["recipient"])
 		amount = json["amount"]
+		signature = json["signature"]
 	except:
 		pass
 	else:
-		transaction = cyb.new_transaction(sender, recipient, amount)
+		transaction = cyb.new_transaction(sender, recipient, amount, signature)
 	return {"transaction":transaction}
 
 @app.route("/transactions/add", methods=["POST"])
