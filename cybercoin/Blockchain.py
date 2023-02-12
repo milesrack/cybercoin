@@ -44,7 +44,8 @@ class Blockchain:
 			"sender":f"0x{'0'*32}",
 			"recipient":self.vault.address,
 			"amount":str(amount),
-			"fee":str(Decimal(self.get_fee()) * amount)
+			"fee":str(Decimal(self.get_fee()) * amount),
+			"signature":""
 		}
 		transaction["txid"] = sha256_hash(json.dumps(transaction))
 		block.data = transaction
@@ -139,9 +140,6 @@ class Blockchain:
 		return self.blocks[-1]
 
 	def get_difficulty(self):
-		#last_block = self.last_block()
-		#last_hash = last_block.hash()
-		#return len(last_hash) - len(last_hash.lstrip("0"))
 		return self.difficulty
 
 	def set_difficulty(self, difficulty):
@@ -202,6 +200,13 @@ class Blockchain:
 				return transaction
 		return False
 
+	def validate_transaction(self):
+		# TODO
+		# new_transaction() and add_transaction should both call this
+		# checks valid sender, recipient, balance, and signature
+		# return True if valid else return False
+		pass
+
 	def new_transaction(self, sender, recipient, amount, signature):
 		amount = Decimal(str(amount))
 		if amount <= Decimal('0'):
@@ -212,7 +217,7 @@ class Blockchain:
 			return False
 		if self.get_balance(sender.address, include_unconfirmed=True) - (amount + amount * self.fee) < Decimal('0'):
 			return False
-		message = ":".join([sender.address, recipient.address, str(amount), self.last_block().hash()])
+		message = ":".join([sender.address, recipient.address, str(amount)])
 		signed = Wallet.verify(sender.public_key, message, signature)
 		if not signed:
 			return False
@@ -222,7 +227,8 @@ class Blockchain:
 			"sender":sender.address,
 			"recipient":recipient.address,
 			"amount":str(amount),
-			"fee":str(amount * self.fee)
+			"fee":str(amount * self.fee),
+			"signature":signature
 		}
 		transaction["txid"] = sha256_hash(json.dumps(transaction))
 		self.unconfirmed_transactions.append(transaction)
@@ -230,8 +236,10 @@ class Blockchain:
 		return transaction
 
 	def add_transaction(self, transaction):
-		#if any([unconfirmed["txid"] == transaction["txid"] for unconfirmed in self.unconfirmed_transactions]):
-		if transaction not in self.unconfirmed_transactions:
+		message = ":".join([transaction["sender"], transaction["recipient"], transaction["amount"]])
+		sender = self.get_wallet(transaction["sender"])
+		signature = transaction["signature"]
+		if transaction not in self.unconfirmed_transactions and Wallet.verify(sender.public_key, message, signature):
 			self.unconfirmed_transactions.append(transaction)
 			return True
 		return False
@@ -242,10 +250,6 @@ class Blockchain:
 			transaction = self.unconfirmed_transactions.pop(0)
 			last_block = self.last_block()
 			last_hash = last_block.hash()
-			##########
-			#last_difficulty = len(last_hash) - len(last_hash.lstrip("0"))
-			#self.difficulty = last_difficulty
-			##########
 			block = Block(last_block.index + 1, last_hash)
 			block.data = transaction
 			mined = False
@@ -260,8 +264,6 @@ class Blockchain:
 			self.consensus()
 			if blocks_before == self.get_blocks():
 				block.miner = str(self.vault)
-				###
-				#block.data["fee"] = str(Decimal(block.data["amount"]) * Decimal(self.get_fee()))
 				self.blocks.append(block)
 				self.announce_block(block)
 				confirmed.append(block.__dict__)
@@ -315,17 +317,13 @@ class Blockchain:
 		return True
 
 	def add_block(self, block):
-		#block_hash = block.hash()
-		#block_difficulty = len(block_hash) - len(block_hash.lstrip("0"))
 		if block.data in self.unconfirmed_transactions:
 			self.unconfirmed_transactions.remove(block.data)
 		if block.index == 0 and datetime.datetime.fromisoformat(block["data"]["timestamp"]) < datetime.datetime.fromisoformat(self.blocks[0].data["timestamp"]):
 			self.blocks = [block]
-			#self.difficulty = block_difficulty
 			return True
 		elif block.previous_hash == self.last_block().hash():
 			self.blocks.append(block)
-			#self.difficulty = block_difficulty
 			return True
 		return False
 

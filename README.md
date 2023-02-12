@@ -26,8 +26,9 @@ python3 setup.py install
 - [ ] Auto register and import vault on start
 - [x] Return wallets as list in API
 - [x] Transaction signing and verification
-- [ ] Generate unique token before signing transactions
+- [x] Change from RSA + PKCS to ECC + DSS
 - [x] Regenerate duplicate vault address on node registration
+- [ ] verify_transaction() function for less code reuse
 - [ ] Replace requests bloat with urllib3
 - [ ] Build front-end application
 
