@@ -15,16 +15,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from flask import Flask, request
-import requests
 from cybercoin import Blockchain as Cybercoin
+import urllib3
+import json
 
 app = Flask(__name__)
+http = urllib3.PoolManager()
 
-cyb = Cybercoin()
-
-print(f"Address: {cyb.vault.address}")
-print(f"Public key: {cyb.vault.public_key}")
-print(f"Private key: {cyb.private_key}")
+@app.before_first_request
+def start():
+	global cyb
+	cyb = Cybercoin()
+	print(f"Address: {cyb.vault.address}")
+	print(f"Public key: {cyb.vault.public_key}")
+	print(f"Private key: {cyb.private_key}")
 
 @app.route("/")
 def home():
@@ -44,8 +48,8 @@ def new_wallet():
 @app.route("/wallets/add", methods=["POST"])
 def add_wallet():
 	try:
-		json = request.get_json()
-		wallet = json["wallet"]
+		data = request.get_json()
+		wallet = data["wallet"]
 	except:
 		return {"added":False}
 	else:
@@ -66,8 +70,8 @@ def blocks():
 @app.route("/blocks/add", methods=["POST"])
 def add_block():
 	try:
-		json = request.get_json()
-		new_block = cyb.blocks_from_json(json["block"])[0]
+		data = request.get_json()
+		new_block = cyb.blocks_from_json(data["block"])[0]
 	except:
 		return {"added":False}
 	else:
@@ -113,11 +117,11 @@ def unconfirmed_transactions_wallet(address):
 def new_transaction():
 	transaction = False
 	try:
-		json = request.get_json()
-		sender = cyb.get_wallet(json["sender"])
-		recipient = cyb.get_wallet(json["recipient"])
-		amount = json["amount"]
-		signature = json["signature"]
+		data = request.get_json()
+		sender = data["sender"]
+		recipient = data["recipient"]
+		amount = data["amount"]
+		signature = data["signature"]
 	except:
 		pass
 	else:
@@ -127,8 +131,8 @@ def new_transaction():
 @app.route("/transactions/add", methods=["POST"])
 def add_transaction():
 	try:
-		json = request.get_json()
-		transaction = json["transaction"]
+		data = request.get_json()
+		transaction = data["transaction"]
 	except:
 		return {"added":False}
 	else:
@@ -172,17 +176,17 @@ def register_nodes():
 		this_node = request.host_url
 		nodes = [remote_node, this_node]
 		cyb.add_nodes(nodes)
-		r = requests.post(f"{remote_node}nodes/add", json={"nodes":list(cyb.get_nodes())})
-		json = r.json()
-		cyb.import_blocks(json["blocks"])
-		cyb.unconfirmed_transactions = json["unconfirmed"]
-		cyb.import_wallets(json["wallets"])
-		while any(wallet["address"] == cyb.vault.address for wallet in json["wallets"]):
-			cyb.vault, cyb.private_key = cyb.new_wallet()
-		cyb.add_nodes(json["nodes"])
-		cyb.set_difficulty(json["difficulty"])
-		cyb.set_fee(json["fee"])
-		cyb.set_reward(json["reward"])
+		r = http.request("POST", f"{remote_node}nodes/add", headers={"Content-Type":"application/json"}, body=json.dumps({"nodes":list(cyb.get_nodes())}))
+		data = json.loads(r.data.decode())
+		cyb.import_blocks(data["blocks"])
+		cyb.unconfirmed_transactions = data["unconfirmed"]
+		cyb.import_wallets(data["wallets"])
+		#while any(wallet["address"] == cyb.vault.address for wallet in json["wallets"]):
+		#	cyb.vault, cyb.private_key = cyb.new_wallet()
+		cyb.add_nodes(data["nodes"])
+		cyb.set_difficulty(data["difficulty"])
+		cyb.set_fee(data["fee"])
+		cyb.set_reward(data["reward"])
 		cyb.announce_nodes(list(cyb.get_nodes()))
 		cyb.announce_wallet(cyb.vault)
 	except Exception as e:

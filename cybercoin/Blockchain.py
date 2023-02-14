@@ -20,8 +20,10 @@ import datetime
 from .Cryptography import sha256_hash
 import json
 import secrets
-import requests
+import urllib3
 from .Wallet import Wallet
+
+http = urllib3.PoolManager()
 
 class Blockchain:
 	def __init__(self):
@@ -200,46 +202,59 @@ class Blockchain:
 				return transaction
 		return False
 
-	def validate_transaction(self):
-		# TODO
-		# new_transaction() and add_transaction should both call this
-		# checks valid sender, recipient, balance, and signature
-		# return True if valid else return False
-		pass
+	def check_unique_signature(self, signature):
+		for block in self.blocks:
+			transaction = block.data
+			if transaction["signature"] == signature:
+				return False
+		for transaction in self.unconfirmed_transactions:
+			if transaction["signature"] == signature:
+				return False
+		return True
+
+	def validate_transaction(self, sender, recipient, amount, signature):
+		sender = self.get_wallet(sender)
+		recipient = self.get_wallet(recipient)
+		try:
+			assert sender
+			assert recipient
+			amount = Decimal(str(amount))
+			assert amount > Decimal("0")
+			signature = signature[:-64]
+		except:
+			return False
+		else:
+			insufficient_balance = self.get_balance(sender.address, include_unconfirmed=True) - (amount + amount * self.fee) < Decimal('0')
+			message = ":".join([sender.address, recipient.address, str(amount)])
+			verified = Wallet.verify(sender.public_key, message, signature)
+			if not insufficient_balance and verified:
+				return True
+		return False
 
 	def new_transaction(self, sender, recipient, amount, signature):
 		amount = Decimal(str(amount))
-		if amount <= Decimal('0'):
-			return False
-		if not sender:
-			return False
-		if not recipient:
-			return False
-		if self.get_balance(sender.address, include_unconfirmed=True) - (amount + amount * self.fee) < Decimal('0'):
-			return False
-		message = ":".join([sender.address, recipient.address, str(amount)])
-		signed = Wallet.verify(sender.public_key, message, signature)
-		if not signed:
-			return False
-		transaction = {
-			"txid":"",
-			"timestamp":str(datetime.datetime.utcnow()),
-			"sender":sender.address,
-			"recipient":recipient.address,
-			"amount":str(amount),
-			"fee":str(amount * self.fee),
-			"signature":signature
-		}
-		transaction["txid"] = sha256_hash(json.dumps(transaction))
-		self.unconfirmed_transactions.append(transaction)
-		self.announce_transaction(transaction)
-		return transaction
+		if self.validate_transaction(sender, recipient, amount, signature) and self.check_unique_signature(signature):
+			transaction = {
+				"txid":"",
+				"timestamp":str(datetime.datetime.utcnow()),
+				"sender":sender,
+				"recipient":recipient,
+				"amount":str(amount),
+				"fee":str(amount * self.fee),
+				"signature":signature
+			}
+			transaction["txid"] = sha256_hash(json.dumps(transaction))
+			self.unconfirmed_transactions.append(transaction)
+			self.announce_transaction(transaction)
+			return transaction
+		return False
 
 	def add_transaction(self, transaction):
-		message = ":".join([transaction["sender"], transaction["recipient"], transaction["amount"]])
-		sender = self.get_wallet(transaction["sender"])
+		sender = transaction["sender"]
+		recipient = transaction["recipient"]
+		amount = transaction["amount"]
 		signature = transaction["signature"]
-		if transaction not in self.unconfirmed_transactions and Wallet.verify(sender.public_key, message, signature):
+		if self.validate_transaction(sender, recipient, amount, signature) and self.check_unique_signature(signature):
 			self.unconfirmed_transactions.append(transaction)
 			return True
 		return False
@@ -276,7 +291,12 @@ class Blockchain:
 		previous_hash = "0"*64
 		while i < len(blocks):
 			block = blocks[i]
-			if (block.previous_hash != previous_hash):
+			transaction = block.data
+			if i > 0:
+				valid_signature = self.validate_transaction(transaction["sender"], transaction["recipient"], transaction["amount"], transaction["signature"])
+			else:
+				valid_signature = True
+			if (block.previous_hash != previous_hash) or (not valid_signature):
 				return False
 			previous_hash = block.hash()
 			i += 1
@@ -337,20 +357,20 @@ class Blockchain:
 		reward = self.get_reward()
 		for node in list(self.nodes):
 			try:
-				r = requests.get(f"{node}nodes/add")
-				json = r.json()
-				blocks = self.blocks_from_json(json["blocks"])
+				r = http.request("GET", f"{node}nodes/add")
+				data = json.loads(r.data.decode())
+				blocks = self.blocks_from_json(data["blocks"])
 			except Exception as e:
 				print(str(e))
 			else:
 				if len(blocks) >= len(longest_chain) and self.timestamp_genesis(blocks) <= self.timestamp_genesis() and self.validate(blocks):
 					longest_chain = blocks
-					unconfirmed = json["unconfirmed"]
-					wallets = json["wallets"]
-					nodes = json["nodes"]
-					difficulty = json["difficulty"]
-					fee = json["fee"]
-					reward = json["reward"]
+					unconfirmed = data["unconfirmed"]
+					wallets = data["wallets"]
+					nodes = data["nodes"]
+					difficulty = data["difficulty"]
+					fee = data["fee"]
+					reward = data["reward"]
 		self.blocks = longest_chain
 		self.import_wallets(wallets)
 		self.unconfirmed_transactions = unconfirmed
@@ -362,27 +382,27 @@ class Blockchain:
 	def announce_block(self, block):
 		for node in self.nodes:
 			try:
-				r = requests.post(f"{node}blocks/add", json={"block":{block.index:block.__dict__}})
+				r = http.request("POST", f"{node}blocks/add", headers={"Content-Type":"application/json"}, body=json.dumps({"block":{block.index:block.__dict__}}))
 			except:
 				pass
 	
 	def announce_nodes(self, nodes):
 		for node in self.nodes:
 			try:
-				r = requests.post(f"{node}nodes/add", json={"nodes":nodes})
+				r = http.request("POST", f"{node}nodes/add", headers={"Content-Type":"application/json"}, body=json.dumps({"nodes":nodes}))
 			except:
 				pass
 
 	def announce_wallet(self, wallet):
 		for node in self.nodes:
 			try:
-				r = requests.post(f"{node}wallets/add", json={"wallet":self.parse_wallet(wallet)})
+				r = http.request("POST", f"{node}wallets/add", headers={"Content-Type":"application/json"}, body=json.dumps({"wallet":self.parse_wallet(wallet)}))
 			except:
 				pass
 
 	def announce_transaction(self, transaction):
 		for node in self.nodes:
 			try:
-				r = requests.post(f"{node}transactions/add", json={"transaction":transaction})
+				r = http.request("POST", f"{node}transactions/add", headers={"Content-Type":"application/json"}, body=json.dumps({"transaction":transaction}))
 			except:
 				pass

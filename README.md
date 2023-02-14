@@ -23,13 +23,14 @@ python3 setup.py install
 - [x] Private keys to prevent forging transactions
 - [x] Pay network fees
 - [x] Import/export keys
-- [ ] Auto register and import vault on start
 - [x] Return wallets as list in API
 - [x] Transaction signing and verification
 - [x] Change from RSA + PKCS to ECC + DSS
 - [x] Regenerate duplicate vault address on node registration
-- [ ] verify_transaction() function for less code reuse
-- [ ] Replace requests bloat with urllib3
+- [x] verify_transaction() function for less code reuse
+- [x] Prevent signature replay
+- [x] Replace requests bloat with urllib3
+- [ ] Auto register and import vault on start
 - [ ] Build front-end application
 
 ## :pushpin: License
