@@ -203,12 +203,13 @@ class Blockchain:
 		return False
 
 	def check_unique_signature(self, signature):
+		signature = signature[:-64]
 		for block in self.blocks:
 			transaction = block.data
-			if transaction["signature"] == signature:
+			if transaction["signature"][:-64] == signature:
 				return False
 		for transaction in self.unconfirmed_transactions:
-			if transaction["signature"] == signature:
+			if transaction["signature"][:-64] == signature:
 				return False
 		return True
 
