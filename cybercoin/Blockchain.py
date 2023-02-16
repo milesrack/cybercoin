@@ -56,10 +56,10 @@ class Blockchain:
 			nonce = int("".join([str(secrets.randbelow(10)) for i in range(8)]))
 			block.nonce = nonce
 			block.reward = str(self.reward / Decimal("2")**(Decimal(str(block.index)) // Decimal("100")))
+			block.miner = self.vault.address
 			new_hash = block.hash()
 			if new_hash.startswith("0"*self.get_difficulty()):
 				mined = True
-				block.miner = self.vault.address
 				self.blocks.append(block)
 	
 	def timestamp_genesis(self, blocks=None):
@@ -130,7 +130,7 @@ class Blockchain:
 		return parsed
 
 	def get_blocks(self):
-		blockchain = {block.index:self.parse_block(block) for block in self.blocks}
+		blockchain = [self.parse_block(block) for block in self.blocks]
 		return blockchain
 
 	def get_block(self, index):
@@ -279,10 +279,9 @@ class Blockchain:
 			blocks_before = self.get_blocks()
 			self.consensus()
 			if blocks_before == self.get_blocks():
-				block.miner = str(self.vault)
 				self.blocks.append(block)
 				self.announce_block(block)
-				confirmed.append(block.__dict__)
+				confirmed.append(dict(block.__dict__))
 		return confirmed
 
 	def validate(self, blocks=None):
@@ -311,7 +310,7 @@ class Blockchain:
 
 	def blocks_from_json(self, dump):
 		blocks = []
-		for index,block in dump.items():
+		for block in dump:
 			b = Block()
 			b.index = int(block["index"])
 			b.previous_hash = block["previous_hash"]
@@ -383,7 +382,7 @@ class Blockchain:
 	def announce_block(self, block):
 		for node in self.nodes:
 			try:
-				r = http.request("POST", f"{node}blocks/add", headers={"Content-Type":"application/json"}, body=json.dumps({"block":{block.index:block.__dict__}}))
+				r = http.request("POST", f"{node}blocks/add", headers={"Content-Type":"application/json"}, body=json.dumps({"block":[dict(block.__dict__)]}))
 			except:
 				pass
 	
