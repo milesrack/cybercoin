@@ -1,2 +1,4 @@
 __pycache__
 cybercoin/__pycache__
+logs/*
+keys/*

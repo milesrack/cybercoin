@@ -15,20 +15,30 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from flask import Flask, request
-from cybercoin import Blockchain as Cybercoin
+from cybercoin import Blockchain
 import urllib3
 import json
+import re
+
+def parse_url(url):
+	if not re.match(r"^https?://", url):
+		url = "http://" + url
+	if not re.match(r".*/$", url):
+		url += "/"
+	return url
+
+def load_config():
+	try:
+		with open("config.json", "r") as f:
+			data = json.loads(f.read())
+			return (parse_url(data["registration_node"]), data["private_key"])
+	except:
+		return (None, None)
 
 app = Flask(__name__)
 http = urllib3.PoolManager()
-
-@app.before_first_request
-def start():
-	global cyb
-	cyb = Cybercoin()
-	print(f"Address: {cyb.vault.address}")
-	print(f"Public key: {cyb.vault.public_key}")
-	print(f"Private key: {cyb.private_key}")
+registration_node, private_key = load_config()
+cyb = Blockchain(private_key=private_key)
 
 @app.route("/")
 def home():
@@ -172,25 +182,25 @@ def add_nodes():
 @app.route("/nodes/register", methods=["POST"])
 def register_nodes():
 	try:
-		remote_node = request.get_json()["node"]
-		this_node = request.host_url
-		nodes = [remote_node, this_node]
-		cyb.add_nodes(nodes)
-		r = http.request("POST", f"{remote_node}nodes/add", headers={"Content-Type":"application/json"}, body=json.dumps({"nodes":list(cyb.get_nodes())}))
-		data = json.loads(r.data.decode())
-		cyb.import_blocks(data["blocks"])
-		cyb.unconfirmed_transactions = data["unconfirmed"]
-		cyb.import_wallets(data["wallets"])
-		#while any(wallet["address"] == cyb.vault.address for wallet in json["wallets"]):
-		#	cyb.vault, cyb.private_key = cyb.new_wallet()
-		cyb.add_nodes(data["nodes"])
-		cyb.set_difficulty(data["difficulty"])
-		cyb.set_fee(data["fee"])
-		cyb.set_reward(data["reward"])
-		cyb.announce_nodes(list(cyb.get_nodes()))
-		cyb.announce_wallet(cyb.vault)
+		registration_node = request.get_json()["node"]
+		if registration_node != "":
+			cyb.add_nodes([registration_node, request.host_url])
+			r = http.request("POST", f"{registration_node}nodes/add", headers={"Content-Type":"application/json"}, body=json.dumps({"nodes":list(cyb.get_nodes())}))
+			data = json.loads(r.data.decode())
+			cyb.import_blocks(data["blocks"])
+			cyb.unconfirmed_transactions = data["unconfirmed"]
+			cyb.import_wallets(data["wallets"])
+			cyb.add_nodes(data["nodes"])
+			cyb.set_difficulty(data["difficulty"])
+			cyb.set_fee(data["fee"])
+			cyb.set_reward(data["reward"])
+			cyb.announce_nodes(list(cyb.get_nodes()))
+			cyb.announce_wallet(cyb.vault)
 	except Exception as e:
 		print(e)
 		return {"registered":False}
 	else:
 		return {"registered":True}
+
+with open(f"keys/{cyb.vault.address}.key", "w") as f:
+	f.write(cyb.private_key)

@@ -30,7 +30,7 @@ python3 setup.py install
 - [x] verify_transaction() function for less code reuse
 - [x] Prevent signature replay
 - [x] Replace requests bloat with urllib3
-- [ ] Auto register and import vault on start
+- [x] Auto register and import vault on start
 - [ ] Build front-end application
 
 ## :pushpin: License

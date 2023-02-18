@@ -26,7 +26,7 @@ from .Wallet import Wallet
 http = urllib3.PoolManager()
 
 class Blockchain:
-	def __init__(self):
+	def __init__(self, private_key=None):
 		self.unconfirmed_transactions = []
 		self.blocks = []
 		self.wallets = {}
@@ -34,7 +34,10 @@ class Blockchain:
 		self.difficulty = 4
 		self.fee = Decimal("0.01")
 		self.reward = Decimal("100.00")
-		self.vault, self.private_key = self.new_wallet()
+		if private_key:
+			self.vault, self.private_key = self.import_vault(private_key)
+		else:
+			self.vault, self.private_key = self.new_wallet()
 		self.create_genesis()
 
 	def create_genesis(self):
@@ -67,6 +70,11 @@ class Blockchain:
 			blocks = self.blocks
 		return datetime.datetime.fromisoformat(blocks[0].data["timestamp"])	
 
+	def import_vault(self, private_key):
+		wallet = Wallet(private_key)
+		self.wallets[wallet.address] = wallet
+		return (wallet, private_key)
+	
 	def new_wallet(self):
 		unique = False
 		while not unique:
@@ -385,7 +393,7 @@ class Blockchain:
 				r = http.request("POST", f"{node}blocks/add", headers={"Content-Type":"application/json"}, body=json.dumps({"block":[dict(block.__dict__)]}))
 			except:
 				pass
-	
+
 	def announce_nodes(self, nodes):
 		for node in self.nodes:
 			try:
