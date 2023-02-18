@@ -1,4 +1,6 @@
 __pycache__
 cybercoin/__pycache__
 logs/*.log
+!logs/.gitkeep
 keys/*.key
+!keys/.gitkeep
