@@ -1,2 +1,2 @@
-#!/bin/bash
-kill $(cat proc)
+#!/bin/sh
+for proc in $(find -name "*.proc"); do kill $(cat $proc); done
