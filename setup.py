@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Copyright (C) 2023  Miles Rack
 
@@ -24,6 +25,9 @@ setup(
 	url="https://github.com/milesrack/cybercoin",
 	packages=["cybercoin"],
 	install_requires=[
-		"pycryptodome >= 3.17"
+		"pycryptodome",
+		"urllib3",
+		"flask",
+		"gevent>=1.4"
 	],
 )
