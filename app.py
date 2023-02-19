@@ -19,26 +19,11 @@ from cybercoin import Blockchain
 import urllib3
 import json
 import re
-
-def parse_url(url):
-	if not re.match(r"^https?://", url):
-		url = "http://" + url
-	if not re.match(r".*/$", url):
-		url += "/"
-	return url
-
-def load_config():
-	try:
-		with open("config.json", "r") as f:
-			data = json.loads(f.read())
-			return (parse_url(data["registration_node"]), data["private_key"])
-	except:
-		return (None, None)
+import config
 
 app = Flask(__name__)
 http = urllib3.PoolManager()
-registration_node, private_key = load_config()
-cyb = Blockchain(private_key=private_key)
+cyb = Blockchain(private_key=config.private_key)
 
 @app.route("/")
 def home():
@@ -202,5 +187,5 @@ def register_nodes():
 	else:
 		return {"registered":True}
 
-with open(f"keys/{cyb.vault.address}.key", "w") as f:
+with open(f"keys/{cyb.vault.address}", "w") as f:
 	f.write(cyb.private_key)

@@ -1,11 +1,14 @@
 # Cybercoin :computer:
 A blockchain implementation for the Cybercoin (CYB) cryptocurrency at CB CYBER.
 
+## :pushpin: Requirements
+- docker
+
 ## :pushpin: Installation
 ```
 git clone https://github.com/milesrack/cybercoin
 cd cybercoin
-python3 setup.py install --user
+sudo docker build -t cybercoin-node .
 ```
 
 ## :pushpin: Getting Started
