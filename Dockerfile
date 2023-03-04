@@ -1,6 +1,5 @@
 FROM alpine
-RUN mkdir /opt/cybercoin/
-WORKDIR /opt/cybercoin
+WORKDIR /opt/cybercoin/
 COPY cybercoin ./cybercoin
 COPY app.py .
 COPY config.py .

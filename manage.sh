@@ -6,7 +6,7 @@ then
 	rm -f /tmp/gunicorn.pid
 	gunicorn --config config.py
 	REGISTERED=false; while ! $REGISTERED; do curl -s -X POST "http://127.0.0.1:$(python3 -c "import config; print(config.port)")/nodes/register" -H "Content-Type: application/json" --data '{"node":"'"$(python3 -c "import config; print(config.registration_node)")"'"}' > /dev/null && REGISTERED=true; done
-	for key in $(ls keys/); do echo -e "ADDRESS: $key\nPRIVATE KEY: $(cat keys/$key)\n"; done
+	# for key in $(ls keys/); do echo -e "ADDRESS: $key\nPRIVATE KEY: $(cat keys/$key)\n"; done
 	tail -f logs/access.log
 elif [[ $1 == "stop" ]]
 then
